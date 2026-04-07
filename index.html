@@ -23,7 +23,10 @@
   .auth-tab{padding:8px 18px;cursor:pointer;font-size:0.88rem;font-weight:600;
     color:var(--mid);border-bottom:2px solid transparent;margin-bottom:-2px}
   .auth-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-  .auth-panel{display:none}.auth-panel.active{display:block}
+  /* Each tab panel gets the same minimum height so the card never shrinks or grows
+     when the user switches between Sign In (2 fields) and Create Account (3 fields).
+     270px comfortably holds 3 fields + a button. */
+  .auth-panel{display:none;min-height:270px}.auth-panel.active{display:block;min-height:270px}
   /* FORM */
   .form-group{margin-bottom:14px}
   .form-label{font-size:0.72rem;font-weight:700;text-transform:uppercase;
@@ -147,20 +150,24 @@
     </div>
 
     <!-- SIGN UP -->
+    <!-- Fields are ordered Email → Password → Full Name to match the Sign In tab above -->
     <div id="tab-signup" class="auth-panel">
       <div class="alert alert-error" id="signup-err"></div>
       <div class="alert alert-success" id="signup-ok"></div>
       <div class="form-group">
-        <label class="form-label">Full Name</label>
-        <input class="form-input" id="signup-name" type="text" placeholder="Your name">
-      </div>
-      <div class="form-group">
         <label class="form-label">Email</label>
-        <input class="form-input" id="signup-email" type="email" placeholder="you@example.com">
+        <input class="form-input" id="signup-email" type="email" placeholder="you@example.com"
+          onkeydown="if(event.key==='Enter')doSignup()">
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input class="form-input" id="signup-pass" type="password" placeholder="Minimum 6 characters">
+        <input class="form-input" id="signup-pass" type="password" placeholder="Minimum 6 characters"
+          onkeydown="if(event.key==='Enter')doSignup()">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="signup-name" type="text" placeholder="Your name"
+          onkeydown="if(event.key==='Enter')doSignup()">
       </div>
       <button class="btn btn-primary" onclick="doSignup()">Create Account</button>
     </div>
@@ -289,7 +296,13 @@ async function doSignup() {
   showAlert('signup-err','');
   var { error } = await db.auth.signUp({
     email, password: pass,
-    options: { data: { full_name: name } }
+    options: {
+      data: { full_name: name },
+      // redirectTo tells Supabase where to send the user after they click
+      // the verification link in their email. Without this, Supabase may
+      // redirect to localhost or an unconfigured URL, causing "site cannot be reached".
+      redirectTo: location.origin + location.pathname
+    }
   });
   if (error) { showAlert('signup-err', error.message); return; }
   showAlert('signup-ok','Account created! Check your email to confirm, then sign in.', 'success');
