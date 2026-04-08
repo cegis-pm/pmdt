@@ -230,6 +230,138 @@
   </div>
 </div>
 
+<!-- MFA VERIFY SCREEN: shown after password is correct, asks for 6-digit code -->
+<div id="mfa-verify-screen" class="auth-wrap" style="display:none;">
+  <div class="auth-card">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--blue);margin-bottom:6px;">Two-Factor Verification</h2>
+    <p style="font-size:0.8rem;color:var(--mid);margin-bottom:20px;">
+      Open your authenticator app and enter the 6-digit code shown for this account.
+    </p>
+    <div class="alert alert-error" id="mfa-verify-err"></div>
+    <div class="form-group">
+      <label class="form-label">6-Digit Code</label>
+      <!-- inputmode="numeric" brings up number keyboard on mobile -->
+      <input class="form-input" id="mfa-code-input" type="text"
+        inputmode="numeric" maxlength="6" placeholder="000000"
+        style="font-size:1.4rem;letter-spacing:0.3em;text-align:center;"
+        onkeydown="if(event.key==='Enter')doVerifyTotp()">
+    </div>
+    <button class="btn btn-primary" onclick="doVerifyTotp()">Verify</button>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn-link btn" onclick="doSignout()">Cancel and sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- MFA ENROL SCREEN: shown on first login when no TOTP factor exists yet -->
+<div id="mfa-enrol-screen" class="auth-wrap" style="display:none;">
+  <div class="auth-card" style="max-width:460px;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--blue);margin-bottom:6px;">Set Up Two-Factor Authentication</h2>
+    <p style="font-size:0.8rem;color:var(--mid);margin-bottom:16px;">
+      This is a one-time setup. Open your authenticator app, tap the
+      <strong>+</strong> button, choose <strong>Scan QR code</strong>,
+      and point your camera at the image below.
+    </p>
+    <div class="alert alert-error" id="mfa-enrol-err"></div>
+    <!-- QR code image will be injected here by JS -->
+    <div id="mfa-qr-wrap" style="text-align:center;margin:16px 0;">
+      <p style="font-size:0.8rem;color:var(--mid);">Loading QR code...</p>
+    </div>
+    <!-- Manual entry fallback -->
+    <div id="mfa-secret-wrap" style="display:none;margin-bottom:16px;">
+      <p style="font-size:0.75rem;color:var(--mid);margin-bottom:6px;">
+        If you cannot scan the QR code, enter this code manually in your app:
+      </p>
+      <div style="background:#f4f6f8;padding:10px;font-family:monospace;
+        font-size:0.9rem;letter-spacing:0.15em;text-align:center;word-break:break-all;"
+        id="mfa-secret-text"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Enter the 6-digit code from your app to confirm setup</label>
+      <input class="form-input" id="mfa-enrol-code" type="text"
+        inputmode="numeric" maxlength="6" placeholder="000000"
+        style="font-size:1.4rem;letter-spacing:0.3em;text-align:center;"
+        onkeydown="if(event.key==='Enter')doEnrolTotp()">
+    </div>
+    <button class="btn btn-primary" onclick="doEnrolTotp()">Confirm and Continue</button>
+    <p style="margin-top:14px;font-size:0.75rem;color:var(--mid);text-align:center;">
+      Having trouble?
+      <button class="btn-link btn" style="font-size:0.75rem;"
+        onclick="document.getElementById('mfa-secret-wrap').style.display='block'">
+        Show manual entry code
+      </button>
+    </p>
+    <div style="text-align:center;margin-top:8px;">
+      <button class="btn-link btn" onclick="doSignout()">Cancel and sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE SETUP SCREEN: shown once after first successful MFA verification -->
+<!-- Collects creator identity details that are saved to the user's account  -->
+<!-- and reused automatically on every instance they create going forward    -->
+<div id="profile-setup-screen" class="auth-wrap" style="display:none;">
+  <div class="auth-card" style="max-width:520px;">
+    <h2 style="font-size:1rem;font-weight:700;color:var(--blue);margin-bottom:6px;">Your Details</h2>
+    <p style="font-size:0.8rem;color:var(--mid);margin-bottom:20px;">
+      This is a one-time setup. These details will be saved to your account and
+      added automatically to every survey instance you create. You will not need
+      to enter them again.
+    </p>
+    <div class="alert alert-error" id="profile-setup-err"></div>
+
+    <!-- Name and Position -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:180px;">
+        <label class="form-label">Full Name</label>
+        <input class="form-input" id="ps-name" type="text" placeholder="e.g. Rahul Sharma" maxlength="100">
+      </div>
+      <div class="form-group" style="flex:1;min-width:180px;">
+        <label class="form-label">Position / Designation</label>
+        <input class="form-input" id="ps-position" type="text" placeholder="e.g. Joint Secretary" maxlength="100">
+      </div>
+    </div>
+
+    <!-- Phone and Email -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:180px;">
+        <label class="form-label">Official Phone Number</label>
+        <input class="form-input" id="ps-phone" type="tel" placeholder="e.g. 9876543210"
+          maxlength="10" inputmode="numeric"
+          oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+      </div>
+      <div class="form-group" style="flex:1;min-width:180px;">
+        <label class="form-label">Official Email Address</label>
+        <input class="form-input" id="ps-email" type="email" placeholder="e.g. rahul@gov.in" maxlength="150">
+      </div>
+    </div>
+
+    <!-- Ministry / Department / Organisation (at least one required) -->
+    <p style="font-size:0.72rem;color:var(--mid);margin:2px 0 8px;">
+      Fill in at least one of the three fields below.
+    </p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="form-group" style="flex:1;min-width:130px;">
+        <label class="form-label">Ministry</label>
+        <input class="form-input" id="ps-ministry" type="text" placeholder="e.g. Ministry of Finance" maxlength="150">
+      </div>
+      <div class="form-group" style="flex:1;min-width:130px;">
+        <label class="form-label">Department</label>
+        <input class="form-input" id="ps-dept" type="text" placeholder="e.g. Dept of Expenditure" maxlength="150">
+      </div>
+      <div class="form-group" style="flex:1;min-width:130px;">
+        <label class="form-label">Organisation</label>
+        <input class="form-input" id="ps-org" type="text" placeholder="e.g. CEGIS Foundation" maxlength="150">
+      </div>
+    </div>
+
+    <button class="btn btn-primary" onclick="saveProfileSetup()">Save and Continue</button>
+    <div style="text-align:center;margin-top:10px;">
+      <button class="btn-link btn" onclick="doSignout()">Cancel and sign out</button>
+    </div>
+  </div>
+</div>
+
 <!-- APP (shown after login) -->
 <div id="app" style="display:none;flex:1;overflow:hidden;flex-direction:column;min-height:0;">
   <div style="background:#f4f6f8;border-bottom:1px solid #e0e0e0;padding:8px 28px;display:flex;justify-content:space-between;align-items:center;">
@@ -254,7 +386,7 @@
 
       <!-- CREATE -->
       <div id="panel-create" class="panel">
-        <div class="card" style="max-width:560px">
+        <div class="card" style="max-width:500px">
           <h2>Create New Instance</h2>
           <div class="alert alert-error" id="create-err"></div>
           <div class="alert alert-success" id="create-ok"></div>
@@ -265,62 +397,8 @@
             <input class="form-input" id="new-name" placeholder="e.g. DOPT Batch 1 - April 2025">
           </div>
 
-          <!-- ADMIN IDENTITY FIELDS
-               These are stored with the instance so we know who created it.
-               They also appear as the first columns in every CSV download.
- -->
-          <p style="font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--mid);margin:16px 0 10px;">
-            Creator Details
-          </p>
-
-          <!-- Full Name and Position -->
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <div class="form-group" style="flex:1;min-width:180px;">
-              <label class="form-label">Full Name</label>
-              <input class="form-input" id="new-creator-name" type="text" placeholder="e.g. Rahul Sharma" maxlength="100">
-            </div>
-            <div class="form-group" style="flex:1;min-width:180px;">
-              <label class="form-label">Position / Designation</label>
-              <input class="form-input" id="new-creator-position" type="text" placeholder="e.g. Joint Secretary" maxlength="100">
-            </div>
-          </div>
-
-          <!-- Phone and Email -->
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <div class="form-group" style="flex:1;min-width:180px;">
-              <label class="form-label">Official Phone Number</label>
-              <!-- Strip non-digits on input; 10-digit Indian format -->
-              <input class="form-input" id="new-creator-phone" type="tel" placeholder="e.g. 9876543210"
-                maxlength="10" inputmode="numeric"
-                oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-            </div>
-            <div class="form-group" style="flex:1;min-width:180px;">
-              <label class="form-label">Official Email Address</label>
-              <input class="form-input" id="new-creator-email" type="email" placeholder="e.g. rahul@gov.in" maxlength="150">
-            </div>
-          </div>
-
-          <!-- Ministry / Department / Organisation (at least one required) -->
-          <p style="font-size:0.72rem;color:var(--mid);margin:4px 0 8px;">
-            Fill in at least one of the three fields below.
-          </p>
-          <div style="display:flex;gap:12px;flex-wrap:wrap;">
-            <div class="form-group" style="flex:1;min-width:140px;">
-              <label class="form-label">Ministry</label>
-              <input class="form-input" id="new-creator-ministry" type="text" placeholder="e.g. Ministry of Finance" maxlength="150">
-            </div>
-            <div class="form-group" style="flex:1;min-width:140px;">
-              <label class="form-label">Department</label>
-              <input class="form-input" id="new-creator-dept" type="text" placeholder="e.g. Dept of Expenditure" maxlength="150">
-            </div>
-            <div class="form-group" style="flex:1;min-width:140px;">
-              <label class="form-label">Organisation</label>
-              <input class="form-input" id="new-creator-org" type="text" placeholder="e.g. CEGIS Foundation" maxlength="150">
-            </div>
-          </div>
-
           <!-- PM Functions -->
-          <div class="form-group" style="margin-top:8px;">
+          <div class="form-group">
             <label class="form-label">PM Functions to Include</label>
             <div class="checkbox-group">
               <label class="checkbox-item"><input type="checkbox" value="Staffing" checked> Staffing (16 questions)</label>
@@ -332,7 +410,7 @@
 
           <button class="btn btn-primary" onclick="createInstance()" style="width:auto;padding:10px 28px;">Create &amp; Generate Link</button>
           <div id="new-link-box" style="display:none;margin-top:18px;">
-            <div style="font-size:0.8rem;font-weight:600;color:var(--green);margin-bottom:6px;">✓ Instance created. Share this link:</div>
+            <div style="font-size:0.8rem;font-weight:600;color:var(--green);margin-bottom:6px;">Instance created. Share this link:</div>
             <div class="link-box" id="new-link-text"></div>
             <button class="btn btn-sm btn-primary" style="margin-top:8px" onclick="copyNewLink()">Copy Link</button>
           </div>
@@ -373,13 +451,25 @@ let currentUser = null;
 let currentInstanceId = null, currentInstanceName = null;
 
 // INIT
+// On page load, check if there is already a session.
+// If so, run the MFA check rather than going straight to the app.
 window.addEventListener('load', async () => {
   const { data: { session } } = await db.auth.getSession();
-  if (session) onLogin(session.user);
+  if (session) {
+    await checkMfa();
+  } else {
+    showScreen('auth');
+  }
 
-  db.auth.onAuthStateChange((_event, session) => {
-    if (session) onLogin(session.user);
-    else         onLogout();
+  // Listen for auth state changes (sign in, sign out, token refresh)
+  db.auth.onAuthStateChange(async (_event, session) => {
+    if (_event === 'SIGNED_IN') {
+      // Password sign-in succeeded. Run MFA check before showing app.
+      await checkMfa();
+    } else if (_event === 'SIGNED_OUT') {
+      onLogout();
+    }
+    // TOTP_CHALLENGE_VERIFIED is handled inside doVerifyTotp/doEnrolTotp directly
   });
 });
 
@@ -393,13 +483,17 @@ function switchTab(tab) {
 }
 
 // SIGN IN
+// Step 1 of login: email + password only.
+// After success, checkMfa() handles the MFA step before showing the app.
 async function doLogin() {
   var email = document.getElementById('login-email').value.trim();
   var pass  = document.getElementById('login-pass').value;
   if (!email || !pass) { showAlert('login-err','Please fill in all fields.'); return; }
   showAlert('login-err','');
   var { error } = await db.auth.signInWithPassword({ email, password: pass });
-  if (error) showAlert('login-err', error.message);
+  if (error) { showAlert('login-err', error.message); return; }
+  // signInWithPassword triggers onAuthStateChange which calls checkMfa()
+  // so we do not call onLogin() here directly
 }
 
 // SIGN UP
@@ -433,20 +527,248 @@ async function doSignout() {
   await db.auth.signOut();
 }
 
+// CHECK MFA
+// Called after every successful password sign-in.
+// Checks the current Authenticator Assurance Level (AAL):
+//   aal1 = password only (MFA not yet verified)
+//   aal2 = password + TOTP verified
+// Also checks whether the user has a TOTP factor enrolled yet.
+async function checkMfa() {
+  try {
+    // Get the current assurance level of the session
+    var { data: aalData } = await db.auth.mfa.getAuthenticatorAssuranceLevel();
+    var currentLevel = aalData.currentLevel;   // what they have proven so far
+    var nextLevel    = aalData.nextLevel;       // what is required to access the app
+
+    // If the session is already at aal2, MFA is fully verified - show the app
+    if (currentLevel === 'aal2') {
+      var { data: { user } } = await db.auth.getUser();
+      onLogin(user);
+      return;
+    }
+
+    // Session is at aal1 (password only). Check what factors the user has enrolled.
+    var { data: factorsData } = await db.auth.mfa.listFactors();
+    var totpFactors = factorsData.totp || [];
+    var verifiedFactors = totpFactors.filter(f => f.status === 'verified');
+
+    if (verifiedFactors.length > 0) {
+      // User has a verified TOTP factor but has not entered the code yet.
+      // Show the verify screen so they can enter their 6-digit code.
+      window._mfaFactorId = verifiedFactors[0].id;
+      showScreen('mfa-verify');
+    } else {
+      // User has no TOTP factor yet (first login after MFA was enabled).
+      // Show the enrolment screen so they can scan the QR code.
+      await startEnrolment();
+      showScreen('mfa-enrol');
+    }
+  } catch(e) {
+    // If MFA check fails for any reason, sign out for safety
+    await db.auth.signOut();
+    showAlert('login-err', 'MFA check failed. Please try signing in again.');
+  }
+}
+
+// SHOW SCREEN
+// Hides all auth-related screens and shows only the requested one.
+function showScreen(name) {
+  document.getElementById('auth-screen').style.display          = 'none';
+  document.getElementById('mfa-verify-screen').style.display    = 'none';
+  document.getElementById('mfa-enrol-screen').style.display     = 'none';
+  document.getElementById('profile-setup-screen').style.display = 'none';
+  document.getElementById('app').style.display                  = 'none';
+
+  if (name === 'auth')           document.getElementById('auth-screen').style.display          = 'flex';
+  if (name === 'mfa-verify')     document.getElementById('mfa-verify-screen').style.display    = 'flex';
+  if (name === 'mfa-enrol')      document.getElementById('mfa-enrol-screen').style.display     = 'flex';
+  if (name === 'profile-setup')  document.getElementById('profile-setup-screen').style.display = 'flex';
+  if (name === 'app')            document.getElementById('app').style.display                  = 'flex';
+}
+
+// VERIFY TOTP
+// Called when the user submits their 6-digit code on the verify screen.
+async function doVerifyTotp() {
+  var code = document.getElementById('mfa-code-input').value.trim();
+  if (code.length !== 6) { showAlert('mfa-verify-err','Please enter the 6-digit code.'); return; }
+  showAlert('mfa-verify-err','');
+  try {
+    // Create a challenge for this factor, then verify the code against it
+    var { data: challenge, error: challengeErr } = await db.auth.mfa.challenge({
+      factorId: window._mfaFactorId
+    });
+    if (challengeErr) { showAlert('mfa-verify-err', challengeErr.message); return; }
+
+    var { error: verifyErr } = await db.auth.mfa.verify({
+      factorId:    window._mfaFactorId,
+      challengeId: challenge.id,
+      code:        code
+    });
+    if (verifyErr) { showAlert('mfa-verify-err', 'Incorrect code. Please try again.'); return; }
+
+    // Code is correct. Session is now at aal2. Show the app.
+    var { data: { user } } = await db.auth.getUser();
+    onLogin(user);
+  } catch(e) {
+    showAlert('mfa-verify-err', 'Verification failed. Please try again.');
+  }
+}
+
+// START ENROLMENT
+// Calls the Supabase MFA enrol API and renders the QR code on screen.
+async function startEnrolment() {
+  try {
+    var { data, error } = await db.auth.mfa.enroll({ factorType: 'totp' });
+    if (error) { showAlert('mfa-enrol-err', error.message); return; }
+
+    // Store the factor ID so we can verify against it after the user scans
+    window._mfaEnrolFactorId = data.id;
+
+    // Render the QR code image (Supabase returns it as a data URI)
+    document.getElementById('mfa-qr-wrap').innerHTML =
+      '<img src="' + data.totp.qr_code + '" alt="QR Code" ' +
+      'style="width:180px;height:180px;border:4px solid #eee;border-radius:8px;">';
+
+    // Also store the secret for manual entry fallback
+    document.getElementById('mfa-secret-text').textContent = data.totp.secret;
+  } catch(e) {
+    showAlert('mfa-enrol-err', 'Could not generate QR code. Please refresh and try again.');
+  }
+}
+
+// CONFIRM ENROLMENT
+// Called when the user enters the 6-digit code after scanning the QR code.
+async function doEnrolTotp() {
+  var code = document.getElementById('mfa-enrol-code').value.trim();
+  if (code.length !== 6) { showAlert('mfa-enrol-err','Please enter the 6-digit code from your app.'); return; }
+  showAlert('mfa-enrol-err','');
+  try {
+    // Challenge and verify in one step to confirm the factor is working
+    var { data: challenge, error: challengeErr } = await db.auth.mfa.challenge({
+      factorId: window._mfaEnrolFactorId
+    });
+    if (challengeErr) { showAlert('mfa-enrol-err', challengeErr.message); return; }
+
+    var { error: verifyErr } = await db.auth.mfa.verify({
+      factorId:    window._mfaEnrolFactorId,
+      challengeId: challenge.id,
+      code:        code
+    });
+    if (verifyErr) {
+      showAlert('mfa-enrol-err', 'Incorrect code. Make sure your app is showing the right account and try again.');
+      return;
+    }
+
+    // Enrolment confirmed. Session is now at aal2. Show the app.
+    var { data: { user } } = await db.auth.getUser();
+    onLogin(user);
+  } catch(e) {
+    showAlert('mfa-enrol-err', 'Enrolment failed. Please refresh and try again.');
+  }
+}
+
 // ON LOGIN
-function onLogin(user) {
+// Called once MFA is fully verified (aal2).
+// Checks whether the user has saved their creator profile yet.
+// If not, shows the one-time profile setup screen first.
+async function onLogin(user) {
   currentUser = user;
-  document.getElementById('auth-screen').style.display = 'none';
-  document.getElementById('app').style.display = 'block';
   document.getElementById('user-email-display').textContent = user.email;
+
+  // Load creator profile from user metadata
+  var profile = user.user_metadata || {};
+  var hasProfile = profile.creator_name && profile.creator_name.trim() !== '';
+
+  if (!hasProfile) {
+    // First login - show profile setup screen before the app
+    showScreen('profile-setup');
+  } else {
+    // Profile already saved - go straight to the app
+    showScreen('app');
+    loadInstances();
+  }
+}
+
+// SAVE PROFILE SETUP
+// Called when user submits the one-time profile form.
+// Saves details into Supabase user metadata so they persist across sessions.
+async function saveProfileSetup() {
+  // Collect and sanitise all fields
+  function sanitise(s) { return (s || '').replace(/</g,'&lt;').replace(/>/g,'&gt;').trim(); }
+
+  var name     = sanitise(document.getElementById('ps-name').value);
+  var position = sanitise(document.getElementById('ps-position').value);
+  var phone    = document.getElementById('ps-phone').value.replace(/[^0-9]/g,'');
+  var email    = document.getElementById('ps-email').value.trim();
+  var ministry = sanitise(document.getElementById('ps-ministry').value);
+  var dept     = sanitise(document.getElementById('ps-dept').value);
+  var org      = sanitise(document.getElementById('ps-org').value);
+
+  // Validate required fields
+  var errors = [];
+  if (!name)                              errors.push('Full name is required.');
+  if (!position)                          errors.push('Position / designation is required.');
+  if (phone.length !== 10)               errors.push('Official phone number must be exactly 10 digits.');
+  if (email.indexOf('@') === -1)         errors.push('Please enter a valid official email address.');
+  if (!ministry && !dept && !org)        errors.push('Please fill in at least one of: Ministry, Department, or Organisation.');
+
+  if (errors.length) {
+    showAlert('profile-setup-err', errors.join(' '));
+    return;
+  }
+
+  showAlert('profile-setup-err', '');
+
+  // Save to Supabase user metadata
+  // user_metadata is stored on the auth.users record and returned
+  // in every session, so it is always available without a DB query
+  var { error } = await db.auth.updateUser({
+    data: {
+      creator_name:     name,
+      creator_position: position,
+      creator_phone:    phone,
+      creator_email:    email,
+      creator_ministry: ministry,
+      creator_dept:     dept,
+      creator_org:      org
+    }
+  });
+
+  if (error) { showAlert('profile-setup-err', 'Could not save your details: ' + error.message); return; }
+
+  // Refresh the local user object so we have the updated metadata
+  var { data: { user } } = await db.auth.getUser();
+  currentUser = user;
+
+  // Go to the app
+  showScreen('app');
   loadInstances();
+}
+
+// LOAD CREATOR PROFILE
+// Reads creator details from user metadata and returns them as an object.
+// Called by createInstance() to auto-fill the instance creator fields.
+function loadCreatorProfile() {
+  var meta = (currentUser && currentUser.user_metadata) || {};
+  return {
+    name:     meta.creator_name     || '',
+    position: meta.creator_position || '',
+    phone:    meta.creator_phone    || '',
+    email:    meta.creator_email    || '',
+    ministry: meta.creator_ministry || '',
+    dept:     meta.creator_dept     || '',
+    org:      meta.creator_org      || ''
+  };
 }
 
 // ON LOGOUT
 function onLogout() {
   currentUser = null;
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('auth-screen').style.display = 'flex';
+  window._mfaFactorId      = null;
+  window._mfaEnrolFactorId = null;
+  document.getElementById('mfa-code-input')  && (document.getElementById('mfa-code-input').value  = '');
+  document.getElementById('mfa-enrol-code')  && (document.getElementById('mfa-enrol-code').value  = '');
+  showScreen('auth');
 }
 
 // PANEL NAV
@@ -535,44 +857,27 @@ async function loadInstances() {
 }
 
 // CREATE INSTANCE
+// Creator details come from the saved profile (set on first login).
+// Only the instance name and PM functions are entered here.
 async function createInstance() {
   var name = document.getElementById('new-name').value.trim();
   var fns  = [...document.querySelectorAll('#panel-create input[type=checkbox]:checked')].map(c => c.value);
 
-  /* Collect creator identity fields */
-  var creatorName     = document.getElementById('new-creator-name').value.trim();
-  var creatorPosition = document.getElementById('new-creator-position').value.trim();
-  var creatorPhone    = document.getElementById('new-creator-phone').value.replace(/[^0-9]/g, '');
-  var creatorEmail    = document.getElementById('new-creator-email').value.trim();
-  var creatorMinistry = document.getElementById('new-creator-ministry').value.trim();
-  var creatorDept     = document.getElementById('new-creator-dept').value.trim();
-  var creatorOrg      = document.getElementById('new-creator-org').value.trim();
-
-  /* SECURITY: strip HTML tags from text inputs */
-  function sanitise(s) { return s.replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-  creatorName     = sanitise(creatorName);
-  creatorPosition = sanitise(creatorPosition);
-  creatorMinistry = sanitise(creatorMinistry);
-  creatorDept     = sanitise(creatorDept);
-  creatorOrg      = sanitise(creatorOrg);
-
-  /* Basic validation */
-  showAlert('create-err',''); showAlert('create-ok','');
-
-  if (!name) { showAlert('create-err','Instance name is required.'); return; }
+  if (!name)       { showAlert('create-err','Instance name is required.'); return; }
   if (!fns.length) { showAlert('create-err','Select at least one PM function.'); return; }
-  if (!creatorName) { showAlert('create-err','Creator full name is required.'); return; }
-  if (!creatorPosition) { showAlert('create-err','Creator position/designation is required.'); return; }
-  if (creatorPhone.length !== 10) { showAlert('create-err','Official phone number must be exactly 10 digits.'); return; }
-  if (creatorEmail.indexOf('@') === -1) { showAlert('create-err','Please enter a valid official email address.'); return; }
 
-  /* At least one of ministry / dept / org must be filled */
-  if (!creatorMinistry && !creatorDept && !creatorOrg) {
-    showAlert('create-err','Please fill in at least one of: Ministry, Department, or Organisation.');
+  // Load creator details from the saved user profile
+  var creator = loadCreatorProfile();
+
+  // Safety check: if profile is somehow missing, block and explain
+  if (!creator.name) {
+    showAlert('create-err','Your profile details are missing. Please sign out and sign back in to complete your profile setup.');
     return;
   }
 
+  showAlert('create-err',''); showAlert('create-ok','');
   document.getElementById('new-link-box').style.display = 'none';
+
   try {
     var result = await apiCall('instances', 'POST', {
       name,
@@ -580,14 +885,14 @@ async function createInstance() {
       status:           'active',
       user_id:          currentUser.id,
       created_by:       currentUser.email,
-      /* Store creator identity so it appears in CSV exports */
-      creator_name:     creatorName,
-      creator_position: creatorPosition,
-      creator_phone:    creatorPhone,
-      creator_email:    creatorEmail,
-      creator_ministry: creatorMinistry,
-      creator_dept:     creatorDept,
-      creator_org:      creatorOrg
+      // Creator identity pulled from saved profile
+      creator_name:     creator.name,
+      creator_position: creator.position,
+      creator_phone:    creator.phone,
+      creator_email:    creator.email,
+      creator_ministry: creator.ministry,
+      creator_dept:     creator.dept,
+      creator_org:      creator.org
     });
     var inst = Array.isArray(result) ? result[0] : result;
     var url  = location.origin + location.pathname.replace('index.html','').replace('admin.html','') + 'survey.html?instance=' + inst.id;
