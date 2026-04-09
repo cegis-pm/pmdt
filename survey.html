@@ -1235,8 +1235,8 @@ function submitProfile() {
   var errEl = document.getElementById('profile-error');
   if (errEl) errEl.style.display = 'none';
 
-  /*  SECURITY: strip HTML tags from text inputs before saving 
-     This prevents anyone entering <script>...</script> in a field. */
+  /*  SECURITY: strip HTML tags from text inputs before saving
+     This prevents anyone entering script tags in a field. */
   function sanitise(str) {
     return str.replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
   }
