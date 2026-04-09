@@ -45,7 +45,7 @@
   .auth-card h1{font-size:1.1rem;font-weight:700;color:var(--blue);margin-bottom:4px}
   .auth-card .sub{font-size:0.78rem;color:var(--mid);margin-bottom:24px}
   .auth-tabs{display:flex;border-bottom:2px solid var(--bg);margin-bottom:22px}
-  .auth-tab{padding:8px 18px;cursor:pointer;font-size:0.88rem;font-weight:600;
+  .auth-tab{padding:8px 0;margin-right:24px;cursor:pointer;font-size:0.88rem;font-weight:600;
     color:var(--mid);border-bottom:2px solid transparent;margin-bottom:-2px}
   .auth-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
   /* Both panels overlap in the same fixed space.
@@ -257,7 +257,7 @@
 
 <!-- MFA ENROL SCREEN: shown on first login when no TOTP factor exists yet -->
 <div id="mfa-enrol-screen" class="auth-wrap" style="display:none;">
-  <div class="auth-card" style="max-width:460px;">
+  <div class="auth-card">
     <h2 style="font-size:1rem;font-weight:700;color:var(--blue);margin-bottom:6px;">Set Up Two-Factor Authentication</h2>
     <p style="font-size:0.8rem;color:var(--mid);margin-bottom:16px;">
       This is a one-time setup. Open your authenticator app, tap the
@@ -324,18 +324,12 @@
       </div>
     </div>
 
-    <!-- Phone and Email -->
-    <div style="display:flex;gap:12px;flex-wrap:wrap;">
-      <div class="form-group" style="flex:1;min-width:180px;">
-        <label class="form-label">Official Phone Number</label>
-        <input class="form-input" id="ps-phone" type="tel" placeholder="e.g. 9876543210"
-          maxlength="10" inputmode="numeric"
-          oninput="this.value=this.value.replace(/[^0-9]/g,'')">
-      </div>
-      <div class="form-group" style="flex:1;min-width:180px;">
-        <label class="form-label">Official Email Address</label>
-        <input class="form-input" id="ps-email" type="email" placeholder="e.g. rahul@gov.in" maxlength="150">
-      </div>
+    <!-- Phone (email is taken automatically from the login account) -->
+    <div class="form-group">
+      <label class="form-label">Official Phone Number</label>
+      <input class="form-input" id="ps-phone" type="tel" placeholder="e.g. 9876543210"
+        maxlength="10" inputmode="numeric"
+        oninput="this.value=this.value.replace(/[^0-9]/g,'')">
     </div>
 
     <!-- Ministry / Department / Organisation (at least one required) -->
@@ -734,7 +728,8 @@ async function saveProfileSetup() {
   var name     = sanitise(document.getElementById('ps-name').value);
   var position = sanitise(document.getElementById('ps-position').value);
   var phone    = document.getElementById('ps-phone').value.replace(/[^0-9]/g,'');
-  var email    = document.getElementById('ps-email').value.trim();
+  // Email comes from the login account — no need to ask the user again
+  var email    = (currentUser && currentUser.email) ? currentUser.email : '';
   var ministry = sanitise(document.getElementById('ps-ministry').value);
   var dept     = sanitise(document.getElementById('ps-dept').value);
   var org      = sanitise(document.getElementById('ps-org').value);
@@ -744,7 +739,6 @@ async function saveProfileSetup() {
   if (!name)                              errors.push('Full name is required.');
   if (!position)                          errors.push('Position / designation is required.');
   if (phone.length !== 10)               errors.push('Official phone number must be exactly 10 digits.');
-  if (email.indexOf('@') === -1)         errors.push('Please enter a valid official email address.');
   if (!ministry && !dept && !org)        errors.push('Please fill in at least one of: Ministry, Department, or Organisation.');
 
   if (errors.length) {
@@ -848,7 +842,11 @@ async function loadInstances() {
     window._instances = {};
     rows.forEach(inst => { window._instances[inst.id] = inst; });
     container.innerHTML = rows.map(inst => {
-      var surveyUrl = location.origin + location.pathname.replace('index.html','').replace('admin.html','') + 'survey.html?instance=' + inst.id;
+      // Build the survey URL robustly:
+    // Strip the filename (index.html or anything after the last /) to get the folder,
+    // then append survey.html. This works for both local files and hosted deployments.
+    var basePath = location.href.substring(0, location.href.lastIndexOf('/') + 1);
+    var surveyUrl = basePath + 'survey.html?instance=' + inst.id;
       var fns = inst.functions ? inst.functions.join(', ') : 'All';
       var safeUrl = escHtml(surveyUrl), safeName = escHtml(inst.name);
       var stopBtn = inst.status === 'active'
@@ -930,7 +928,9 @@ async function createInstance() {
       creator_org:      creator.org
     });
     var inst = Array.isArray(result) ? result[0] : result;
-    var url  = location.origin + location.pathname.replace('index.html','').replace('admin.html','') + 'survey.html?instance=' + inst.id;
+    // Build the survey URL the same robust way as in loadInstances()
+    var basePath = location.href.substring(0, location.href.lastIndexOf('/') + 1);
+    var url  = basePath + 'survey.html?instance=' + inst.id;
     document.getElementById('new-link-text').textContent = url;
     document.getElementById('new-link-box').style.display = 'block';
     showAlert('create-ok','Instance created!', 'success');
