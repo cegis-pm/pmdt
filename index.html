@@ -40,8 +40,26 @@
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   body{font-family:var(--font);background:#fff;color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
   /* AUTH SCREENS */
-  .auth-wrap{flex:1;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:20px}
-  .auth-card{background:var(--white);padding:36px 40px;width:100%;max-width:420px}
+  /* Two-column layout: info panel on the left, login card on the right */
+  .auth-wrap{flex:1;overflow-y:auto;display:flex;align-items:stretch;justify-content:center;padding:0;gap:0}
+  .auth-left{
+    flex:1;max-width:50%;padding:48px 52px;
+    background:var(--blue);
+    color:#fff;
+    display:flex;flex-direction:column;justify-content:center;
+  }
+  .auth-left h2{font-size:1.1rem;font-weight:700;margin-bottom:20px;color:#fff;letter-spacing:-0.01em;}
+  .auth-left p{font-size:0.88rem;line-height:1.75;color:rgba(255,255,255,0.88);margin-bottom:14px;}
+  .auth-left a{color:#fff;font-weight:700;text-decoration:underline;}
+  .auth-left a:hover{opacity:0.8;}
+  .auth-right{flex:1;max-width:50%;display:flex;align-items:center;justify-content:center;padding:40px 20px;background:#fff;}
+  .auth-card{background:var(--white);padding:36px 40px;width:100%;max-width:420px;}
+  /* Stack vertically on small screens */
+  @media(max-width:780px){
+    .auth-wrap{flex-direction:column;}
+    .auth-left{max-width:100%;padding:32px 28px;}
+    .auth-right{max-width:100%;padding:24px 16px;}
+  }
   .auth-card h1{font-size:1.1rem;font-weight:700;color:var(--blue);margin-bottom:4px}
   .auth-card .sub{font-size:0.78rem;color:var(--mid);margin-bottom:24px}
   .auth-tabs{display:flex;border-bottom:2px solid var(--bg);margin-bottom:22px}
@@ -161,6 +179,15 @@
   </div>
 </header>
 <div id="auth-screen" class="auth-wrap">
+  <!-- LEFT: info panel -->
+  <div class="auth-left">
+    <h2>About the PMDT Self-Assessment:</h2>
+    <p>The PMDT self-assessment is a tool that provides a snapshot of personnel management maturity across four key functions - Staffing, Recruitment, Learning &amp; Development, and Performance Management.</p>
+    <p>The objective is to identify strengths and areas of development to support more effective personnel management practices within your organisation / department.</p>
+    <p>Please go through the <a href="https://docs.google.com/document/d/1GwaL7zuG2jss2037lYfkseWBRbZIBLDAexFggY32r0I/edit?usp=sharing" target="_blank" rel="noopener noreferrer">linked document</a> detailing out the tool.</p>
+  </div>
+  <!-- RIGHT: login / sign-up card -->
+  <div class="auth-right">
   <div class="auth-card">
     <div class="auth-tabs">
       <div class="auth-tab active" onclick="switchTab('login')">Sign In</div>
@@ -230,6 +257,7 @@
 
     </div><!-- end auth-panels-wrap -->
   </div>
+  </div><!-- end auth-right -->
 </div>
 
 <!-- MFA VERIFY SCREEN: shown after password is correct, asks for 6-digit code -->
