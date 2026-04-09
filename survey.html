@@ -1411,7 +1411,8 @@ var currentQ = 0;  /* index within current section's questions */
 
 /* RENDER SECTION */
 function renderSection() {
-  const sec = SECTIONS[currentSection];
+  // Use getActiveSections() so only the functions enabled for this instance are used
+  const sec = getActiveSections()[currentSection];
   const qs  = getQs(sec.fn);
   currentQ  = 0;
   renderCarouselQuestion(qs);
@@ -1421,14 +1422,16 @@ function renderSection() {
 /* RENDER ONE CAROUSEL QUESTION */
 function renderCarouselQuestion(qs) {
   var q     = qs[currentQ];
-  var sec   = SECTIONS[currentSection];
+  // Use getActiveSections() so the section colour/style matches the active instance
+  var sec   = getActiveSections()[currentSection];
   var total = qs.length;
 
-  /* Global position across ALL sections */
+  /* Global position across active sections only (not all 4 if some are disabled) */
   var globalIdx = 0;
-  var globalTotal = QUESTIONS.length;
+  var activeSecs = getActiveSections();
+  var globalTotal = activeSecs.reduce(function(acc, s) { return acc + getQs(s.fn).length; }, 0);
   for (var s = 0; s < currentSection; s++) {
-    globalIdx += getQs(SECTIONS[s].fn).length;
+    globalIdx += getQs(activeSecs[s].fn).length;
   }
   globalIdx += currentQ;
 
@@ -1507,7 +1510,7 @@ function renderCarouselQuestion(qs) {
 function recordAnswerCarousel(qid, score) {
   answers[qid] = score;
   updateSidebar();
-  var qs = getQs(SECTIONS[currentSection].fn);
+  var qs = getQs(getActiveSections()[currentSection].fn);
   /* Auto-advance after short delay */
   setTimeout(function() {
     nextQuestion();
@@ -1518,7 +1521,7 @@ function recordAnswerCarousel(qid, score) {
 
 /* NEXT / PREV */
 function nextQuestion() {
-  var qs = getQs(SECTIONS[currentSection].fn);
+  var qs = getQs(getActiveSections()[currentSection].fn);
   /* Must answer current question first */
   if (answers[qs[currentQ].id] === undefined) {
     var w = document.getElementById('warning-banner');
@@ -1540,13 +1543,13 @@ function nextQuestion() {
 
 function prevQuestion() {
   var wb = document.getElementById('warning-banner'); if (wb) wb.style.display = 'none';
-  var qs = getQs(SECTIONS[currentSection].fn);
+  var qs = getQs(getActiveSections()[currentSection].fn);
   if (currentQ > 0) {
     currentQ--;
     renderCarouselQuestion(qs);
   } else if (currentSection > 0) {
     currentSection--;
-    var prevQs = getQs(SECTIONS[currentSection].fn);
+    var prevQs = getQs(getActiveSections()[currentSection].fn);
     currentQ = prevQs.length - 1;
     renderCarouselQuestion(prevQs);
   }
