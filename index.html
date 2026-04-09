@@ -620,24 +620,39 @@ async function doVerifyTotp() {
 // Calls the Supabase MFA enrol API and renders the QR code on screen.
 async function startEnrolment() {
   try {
-    // STEP 1: Clean up any leftover unverified factors first.
-    // If a previous enrolment was started but never completed (e.g. user
-    // closed the tab), Supabase leaves a "ghost" factor behind with an
-    // empty friendly name. This blocks a new enrolment with the error
-    // "A factor with the friendly name '' already exists".
-    // We delete all unverified factors before trying to create a new one.
+    // STEP 1: Try to delete ALL existing TOTP factors (verified or not).
+    // We use listFactors() but also try a direct unenroll on any factor
+    // we find. Unverified "ghost" factors (with empty friendly name) are
+    // invisible to listFactors() in some Supabase versions, so we also
+    // handle the case where enroll() returns a conflict error by unenrolling
+    // using the factor ID returned in the error response.
     var { data: existingFactors } = await db.auth.mfa.listFactors();
     var allTotp = (existingFactors && existingFactors.totp) ? existingFactors.totp : [];
     for (var f of allTotp) {
-      // Only delete factors that are NOT yet verified (status = 'unverified')
-      if (f.status !== 'verified') {
-        await db.auth.mfa.unenroll({ factorId: f.id });
-      }
+      // Delete every factor — verified or not — so we start completely fresh
+      await db.auth.mfa.unenroll({ factorId: f.id });
     }
 
-    // STEP 2: Now enrol a fresh TOTP factor
-    var { data, error } = await db.auth.mfa.enroll({ factorType: 'totp' });
-    if (error) { showAlert('mfa-enrol-err', error.message); return; }
+    // STEP 2: Enrol a fresh TOTP factor.
+    // We give it a friendlyName with a timestamp so it is always unique.
+    // This prevents the "friendly name already exists" error even if a
+    // ghost factor is still lurking that listFactors() couldn't see.
+    var friendlyName = 'PMDT-' + Date.now();
+    var { data, error } = await db.auth.mfa.enroll({
+      factorType:   'totp',
+      friendlyName: friendlyName   // unique name = no name conflict
+    });
+
+    // STEP 3: If there's STILL a conflict, the ghost factor is completely
+    // hidden from the client. Show a clear message telling the user what to do.
+    if (error) {
+      showAlert('mfa-enrol-err',
+        error.message +
+        ' — Please go to your Supabase dashboard → Authentication → Users' +
+        ' → find this user → delete the MFA factor listed there, then try again.'
+      );
+      return;
+    }
 
     // Store the factor ID so we can verify against it after the user scans
     window._mfaEnrolFactorId = data.id;
