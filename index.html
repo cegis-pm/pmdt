@@ -620,6 +620,22 @@ async function doVerifyTotp() {
 // Calls the Supabase MFA enrol API and renders the QR code on screen.
 async function startEnrolment() {
   try {
+    // STEP 1: Clean up any leftover unverified factors first.
+    // If a previous enrolment was started but never completed (e.g. user
+    // closed the tab), Supabase leaves a "ghost" factor behind with an
+    // empty friendly name. This blocks a new enrolment with the error
+    // "A factor with the friendly name '' already exists".
+    // We delete all unverified factors before trying to create a new one.
+    var { data: existingFactors } = await db.auth.mfa.listFactors();
+    var allTotp = (existingFactors && existingFactors.totp) ? existingFactors.totp : [];
+    for (var f of allTotp) {
+      // Only delete factors that are NOT yet verified (status = 'unverified')
+      if (f.status !== 'verified') {
+        await db.auth.mfa.unenroll({ factorId: f.id });
+      }
+    }
+
+    // STEP 2: Now enrol a fresh TOTP factor
     var { data, error } = await db.auth.mfa.enroll({ factorType: 'totp' });
     if (error) { showAlert('mfa-enrol-err', error.message); return; }
 
@@ -635,7 +651,8 @@ async function startEnrolment() {
     // Also store the secret for manual entry fallback
     document.getElementById('mfa-secret-text').textContent = data.totp.secret;
   } catch(e) {
-    showAlert('mfa-enrol-err', 'Could not generate QR code. Please refresh and try again.');
+    // Show the actual error message so it's easier to diagnose problems
+    showAlert('mfa-enrol-err', 'Could not generate QR code: ' + (e.message || 'Unknown error') + '. Please refresh and try again.');
   }
 }
 
