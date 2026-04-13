@@ -685,6 +685,22 @@
   /* Hide during PDF export */
   body.exporting .no-pdf { display: none !important; }
 
+  /* During PDF export, remove all height/overflow constraints so html2canvas
+     can see the FULL page content — including the annexure which is scrolled
+     off-screen inside .scroll-body and would otherwise be invisible to the
+     canvas renderer. Without this, the annexure simply does not appear in the PDF. */
+  body.exporting,
+  body.exporting #screen-results,
+  body.exporting #screen-results .scroll-body {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  /* Also ensure the content wrapper itself has no clipping */
+  body.exporting #screen-results .content {
+    overflow: visible !important;
+  }
+
   /* CONSENT BOX */
   .consent-box {
     padding: 0;
@@ -1017,10 +1033,10 @@ Please go through the <a href="https://docs.google.com/document/d/1GwaL7zuG2jss2
         </div>
       </div>
 
-      <!-- Maturity Framework -->
-      <!-- html2pdf page break trigger: must have display:block and non-zero height -->
-      <div class="html2pdf__page-break"></div>
-      <div style="margin-top:0; margin-bottom:18px;">
+      <!-- Annexure: break-before:page via CSS class forces a clean new page.
+           The old html2pdf__page-break div was causing content to render at the
+           very bottom of the first page before breaking — removed. -->
+      <div style="break-before:page; page-break-before:always; margin-top:0; margin-bottom:18px;">
         <h2 style="font-size:1.3rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--cegis-blue); text-align:center;">Annexure</h2>
       </div>
       <div class="chart-container" id="maturity-section" style="page-break-inside: avoid;">
@@ -1742,18 +1758,34 @@ function downloadPDF() {
   const btn = document.getElementById('btn-pdf');
   btn.textContent = 'Generating…';
   btn.disabled = true;
+
+  /* Add exporting class — this triggers CSS rules that:
+     1. Remove overflow/height constraints from scroll containers (so
+        html2canvas can see the full page including the Annexure)
+     2. Hide the download button itself (no-pdf class)  */
   document.body.classList.add('exporting');
 
-  /* The element we want to capture: the results content area */
+  /* Capture the results content div — now fully visible thanks to exporting CSS */
   const el = document.querySelector('#screen-results .content');
 
   const opt = {
-    margin:      [10, 10, 10, 10],   /* top, left, bottom, right in mm */
+    margin:      [12, 12, 12, 12],   /* top, left, bottom, right in mm */
     filename:    (profile.name ? profile.name.split(' ')[0] : 'Assessment') + '_' + (profile.position ? profile.position.replace(/[^a-zA-Z]/g,'').substring(0,6).toUpperCase() : 'XX') + '_' + (profile.phone || '0000') + '.pdf',
     image:       { type: 'jpeg', quality: 0.97 },
-    html2canvas: { scale: 2, useCORS: true, logging: false },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      /* scrollY:0 ensures html2canvas starts from the top of the element,
+         not from wherever the user has scrolled to */
+      scrollY: 0,
+      windowWidth: document.documentElement.scrollWidth
+    },
     jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:   { mode: ['avoid-all', 'css', 'legacy'] }
+    /* css mode: respects break-before:page / page-break-before:always set in HTML/CSS.
+       This is what makes the Annexure start on a fresh page without the old
+       html2pdf__page-break hack that was pushing content to the bottom of page 1. */
+    pagebreak:   { mode: 'css', before: '[style*="break-before:page"]' }
   };
 
   html2pdf()
